@@ -48,8 +48,8 @@ def processPacket(packet):
   global SYN
   global SYN_ACK
 
-  packet_count+=1
-  print packet_count
+#  packet_count+=1
+#  print packet_count
 
   if(packet.haslayer("TCP")):
     # grab flags from the packet
@@ -68,4 +68,7 @@ def processPacket(packet):
 
 # importing the whole pcap file takes a while
 # use sniff(offline="...", prn=customFunction) to process them individually as they come in
-scapy.sniff(offline=arg, prn=processPacket)
+print "Reading packets from file..."
+pkts = scapy.rdpcap(arg)
+for pk in pkts:
+  processPacket(pk)
