@@ -68,7 +68,19 @@ def processPacket(packet):
 
 # importing the whole pcap file takes a while
 # use sniff(offline="...", prn=customFunction) to process them individually as they come in
+
 print "Reading packets from file..."
-pkts = scapy.rdpcap(arg)
-for pk in pkts:
-  processPacket(pk)
+scapy.sniff(offline=arg, prn=processPacket, lfilter=lambda x: x.haslayer("TCP"))
+
+# pkts = scapy.rdpcap(arg)
+# for pk in pkts:
+#  processPacket(pk)
+
+print "Any addresses displayed below are suspected of SYN scanning:"
+print "------"
+for addr in address_list:
+  res = addr.syn_sent / add.syn_ack_received
+  if res >= 3:
+    print addr.ip_address
+print "------"
+print "Analysis complete."
