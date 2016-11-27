@@ -9,62 +9,32 @@ import sys
 # once finished, look through the array for any IPs that satisfy the suspicion requirements
 # print these to the console
 
-packet_count = 0
-address_list = []
+# dictionary to hold known addresses. addr_dict['address'] returns a tuple (a, b)
+# where a is SYN packets sent and b is SYN + ACK packets received
+addr_dict = {}
+
+# file argument
 arg = sys.argv[1]
+
+# hex numbers to identify request types
 SYN = 0x02
 SYN_ACK = 0x12
 
-class Address:
-  global SYN
-  global SYN_ACK
-  ip_address = 0
-  syn_sent = 0
-  syn_ack_received = 0
+# helper methods for processPacket
+def count_syn_packet(addr):
+  if addr in addr_dict:
+    addr_dict[addr] = (addr_dict[addr][0] + 1, addr_dict[addr][1])
+  else:
+    addr_dict[addr] = (1, 0)
 
-  def __init__(self, ip):
-    self.ip_address = ip
-
-  def increment(self, indicator):
-    if indicator == SYN:
-      self.syn_sent+=1
-    elif indicator == SYN_ACK:
-      self.syn_ack_received+=1
-
-  # helper method to determine if this address is suspected of SYN scanning
-  def is_suspect(self):
-
-    # try/catch to handle case where syn_ack_received is 0
-    try:
-      res = self.syn_sent / self.syn_ack_received
-      break
-    except ZeroDivisionError:
-      if syn_sent >= 3:
-        return True
-      else:
-        return False
-
-    # normal case: figure out if this address sent too many SYN requests compared to the SYN + ACK requests it received
-    if res >= 3:
-      return True
-    else:
-      return False
-
-# helper method for processPacket
-def countPacket(addr, indicator):
-  found = False
-  for x in address_list:
-    if x.ip_address == addr:
-      found = True
-      x.increment(indicator)
-  if not found:
-    new_addr = Address(addr)
-    new_addr.increment(indicator)
-    address_list.append(new_addr)
-
+def count_syn_ack_packet(addr):
+  if addr in addr_dict:
+    addr_dict[addr] = (addr_dict[addr][0], addr_dict[addr][1] + 1)
+  else:
+    addr_dict[addr] = (0, 1)
+    
 # lambda function passed to scapy.sniff
 def processPacket(packet):
-  global packet_count
   global SYN
   global SYN_ACK
 
@@ -77,20 +47,30 @@ def processPacket(packet):
     SYN = 0x02
     SYNACK = 0x12
     if flags & SYN:
-      print "SYN detected. Source: %s, Dest: %s" % (packet["IP"].src, packet["IP"].dst)
-      countPacket(packet["IP"].src, SYN)
+      print "SYN detected."
+      count_syn_packet(packet["IP"].src)
     elif flags & SYN_ACK:
-      print "SYN-ACK detected. Source: %s, Dest: %s" % (packet["IP"].src, packet["IP"].dst)
-      countPacket(packet["IP"].dst, SYN_ACK)
+      print "SYN-ACK detected.")
+      count_syn_ack_packet(packet["IP"].dst)
 
+def is_suspect(tup):
+  try:
+    res = tup[0] / tup[1]
+  except ZeroDivisionError:
+    if tup[0] >= 3:
+      return True
+    else:
+      return False
+
+  if res >= 3:
+    return True
+  else:
+    return False
 
 print "Reading packets from file..."
 scapy.sniff(offline=arg, prn=processPacket, lfilter=lambda x: x.haslayer("TCP"))
 
-print "Any addresses displayed below are suspected of SYN scanning:"
-print "------"
-for addr in address_list:
-  if addr.is_suspect:
-    print addr.ip_address
-print "------"
-print "Analysis complete."
+for k, v in addr_dict:
+  if is_suspect(v):
+    print k
+
