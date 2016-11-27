@@ -47,10 +47,8 @@ def processPacket(packet):
     SYN = 0x02
     SYNACK = 0x12
     if flags & SYN:
-      print "SYN detected."
       count_syn_packet(packet["IP"].src)
     elif flags & SYN_ACK:
-      print "SYN-ACK detected."
       count_syn_ack_packet(packet["IP"].dst)
 
 def is_suspect(tup):
@@ -70,7 +68,10 @@ def is_suspect(tup):
 print "Reading packets from file..."
 scapy.sniff(offline=arg, prn=processPacket, lfilter=lambda x: x.haslayer("TCP"))
 
+print "Finished reading from file. Printing suspicious addresses:"
 for k, v in addr_dict.iteritems():
   if is_suspect(v):
     print k
 
+print ""
+print "Complete."
