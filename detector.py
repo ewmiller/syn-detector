@@ -31,25 +31,42 @@ class Address:
     elif indicator == SYN_ACK:
       self.syn_ack_received+=1
 
+  # helper method to determine if this address is suspected of SYN scanning
+  def is_suspect(self):
+
+    # try/catch to handle case where syn_ack_received is 0
+    try:
+      res = self.syn_sent / self.syn_ack_received
+      break
+    except ZeroDivisionError:
+      if syn_sent >= 3:
+        return True
+      else:
+        return False
+
+    # normal case: figure out if this address sent too many SYN requests compared to the SYN + ACK requests it received
+    if res >= 3:
+      return True
+    else:
+      return False
+
 # helper method for processPacket
 def countPacket(addr, indicator):
   found = False
   for x in address_list:
     if x.ip_address == addr:
-      found = true
+      found = True
       x.increment(indicator)
   if not found:
     new_addr = Address(addr)
     new_addr.increment(indicator)
+    address_list.append(new_addr)
 
 # lambda function passed to scapy.sniff
 def processPacket(packet):
   global packet_count
   global SYN
   global SYN_ACK
-
-#  packet_count+=1
-#  print packet_count
 
   if(packet.haslayer("TCP")):
     # grab flags from the packet
@@ -66,21 +83,14 @@ def processPacket(packet):
       print "SYN-ACK detected. Source: %s, Dest: %s" % (packet["IP"].src, packet["IP"].dst)
       countPacket(packet["IP"].dst, SYN_ACK)
 
-# importing the whole pcap file takes a while
-# use sniff(offline="...", prn=customFunction) to process them individually as they come in
 
 print "Reading packets from file..."
 scapy.sniff(offline=arg, prn=processPacket, lfilter=lambda x: x.haslayer("TCP"))
 
-# pkts = scapy.rdpcap(arg)
-# for pk in pkts:
-#  processPacket(pk)
-
 print "Any addresses displayed below are suspected of SYN scanning:"
 print "------"
 for addr in address_list:
-  res = addr.syn_sent / add.syn_ack_received
-  if res >= 3:
+  if addr.is_suspect:
     print addr.ip_address
 print "------"
 print "Analysis complete."
