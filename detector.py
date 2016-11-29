@@ -2,9 +2,7 @@
 
 import scapy.all as scapy
 import sys
-import json
-
-# NOTE TO INSTRUCTORS: on my machine, this program took about 30 minutes to run, possibly due to scapy being slow. However, it does complete successfully once it's finally done.
+# import json
 
 # Goal: read .pcap file packet-by-packet
 # for each packet, check if it's a SYN request
