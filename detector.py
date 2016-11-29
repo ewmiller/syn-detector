@@ -1,5 +1,8 @@
+#!/usr/bin/python
+
 import scapy.all as scapy
 import sys
+import json
 
 # Goal: read .pcap file packet-by-packet
 # for each packet, check if it's a SYN request
@@ -12,9 +15,6 @@ import sys
 # dictionary to hold known addresses. addr_dict['address'] returns a tuple (a, b)
 # where a is SYN packets sent and b is SYN + ACK packets received
 addr_dict = {}
-
-# list to hold known bad addresses
-bad_addresses = []
 
 # file argument
 arg = sys.argv[1]
@@ -52,38 +52,20 @@ def processPacket(packet):
     elif flags & SYN_ACK:
       count_syn_ack_packet(packet["IP"].dst)
 
-def is_suspect(tup):
-  try:
-    res = tup[0] / tup[1]
-  except ZeroDivisionError:
-    if tup[0] >= 3:
-      return True
-    else:
-      return False
-
-  if res >= 3:
-    return True
-  else:
-    return False
-
-output_file = open("out.txt", "w+")
-
 print "Reading packets from file..."
-scapy.sniff(offline=arg, prn=processPacket, store=0, lfilter=lambda x: x.haslayer("TCP"))
-# pcap = scapy.PcapReader(arg)
+# scapy.sniff(offline=arg, prn=processPacket, store=0, lfilter=lambda x: x.haslayer("TCP"))
+pcap = scapy.PcapReader(arg)
 
 print "Finished opening file. Iterating through packets."
-# for pack in pcap:
-#  processPacket(pack)
+for pk in pcap:
+  processPacket(pk)
 
-output_file.write("Suspicious packets: ")
+with open('addresses.json', 'w') as f:
+  json.dump(addr_dict, f)
 
-print "Printing suspicious addresses:"
 for k, v in addr_dict.iteritems():
-  if is_suspect(v):
+  if v[0] >= v[1]*3:
     print k
-    output_file.write(k)
 
 print ""
 print "Complete."
-output_file.close()
