@@ -13,6 +13,9 @@ import sys
 # where a is SYN packets sent and b is SYN + ACK packets received
 addr_dict = {}
 
+# list to hold known bad addresses
+bad_addresses = []
+
 # file argument
 arg = sys.argv[1]
 
@@ -44,8 +47,6 @@ def processPacket(packet):
 
     # do a bitwise AND to see which flag is set
     # if SYN or SYN-ACK, respond accordingly
-    SYN = 0x02
-    SYNACK = 0x12
     if flags & SYN:
       count_syn_packet(packet["IP"].src)
     elif flags & SYN_ACK:
@@ -68,12 +69,12 @@ def is_suspect(tup):
 output_file = open("out.txt", "w+")
 
 print "Reading packets from file..."
-#scapy.sniff(offline=arg, prn=processPacket, lfilter=lambda x: x.haslayer("TCP"))
-pcap = scapy.PcapReader(arg)
+scapy.sniff(offline=arg, prn=processPacket, store=0, lfilter=lambda x: x.haslayer("TCP"))
+# pcap = scapy.PcapReader(arg)
 
 print "Finished opening file. Iterating through packets."
-for pack in pcap:
-  processPacket(pack)
+# for pack in pcap:
+#  processPacket(pack)
 
 output_file.write("Suspicious packets: ")
 
