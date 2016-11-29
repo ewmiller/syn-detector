@@ -4,6 +4,8 @@ import scapy.all as scapy
 import sys
 import json
 
+# NOTE TO INSTRUCTORS: on my machine, this program took about 30 minutes to run, possibly due to scapy being slow. However, it does complete successfully once it's finally done.
+
 # Goal: read .pcap file packet-by-packet
 # for each packet, check if it's a SYN request
 # if so, store source IP address in array and make its SYN count 1
@@ -45,23 +47,22 @@ def processPacket(packet):
     # grab flags from the packet
     flags = packet["TCP"].flags
 
-    # do a bitwise AND to see which flag is set
     # if SYN or SYN-ACK, respond accordingly
     if flags == SYN:
       count_syn_packet(packet["IP"].src)
     elif flags == SYN_ACK:
       count_syn_ack_packet(packet["IP"].dst)
 
-print "Reading packets from file..."
-# scapy.sniff(offline=arg, prn=processPacket, store=0, lfilter=lambda x: x.haslayer("TCP"))
 pcap = scapy.PcapReader(arg)
 
-print "Finished opening file. Iterating through packets."
+print "Processing packets..."
+print ""
 for pk in pcap:
   processPacket(pk)
 
-with open('addresses.json', 'w') as f:
-  json.dump(addr_dict, f)
+# dump the state of addr_dict to output.json. only needed for debugging.
+# with open('addresses.json', 'w') as f:
+#   json.dump(addr_dict, f)
 
 for k, v in addr_dict.iteritems():
   if v[0] >= v[1]*3:
