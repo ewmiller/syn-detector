@@ -47,9 +47,9 @@ def processPacket(packet):
 
     # do a bitwise AND to see which flag is set
     # if SYN or SYN-ACK, respond accordingly
-    if flags & SYN:
+    if flags == SYN:
       count_syn_packet(packet["IP"].src)
-    elif flags & SYN_ACK:
+    elif flags == SYN_ACK:
       count_syn_ack_packet(packet["IP"].dst)
 
 print "Reading packets from file..."
