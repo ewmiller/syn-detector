@@ -65,13 +65,24 @@ def is_suspect(tup):
   else:
     return False
 
-print "Reading packets from file..."
-scapy.sniff(offline=arg, prn=processPacket, lfilter=lambda x: x.haslayer("TCP"))
+output_file = open("out.txt", "w+")
 
-print "Finished reading from file. Printing suspicious addresses:"
+print "Reading packets from file..."
+#scapy.sniff(offline=arg, prn=processPacket, lfilter=lambda x: x.haslayer("TCP"))
+pcap = scapy.PcapReader(arg)
+
+print "Finished opening file. Iterating through packets."
+for pack in pcap:
+  processPacket(pack)
+
+output_file.write("Suspicious packets: ")
+
+print "Printing suspicious addresses:"
 for k, v in addr_dict.iteritems():
   if is_suspect(v):
     print k
+    output_file.write(k)
 
 print ""
 print "Complete."
+output_file.close()
